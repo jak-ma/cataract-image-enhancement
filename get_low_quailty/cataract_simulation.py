@@ -56,6 +56,7 @@ def cataract_simulation(filepath, maskpath, image_size):
     B, G, R = cv2.split(funds_blur)     # [h, w, 3] -> [h, w] * 3
 
     panel = cv2.merge([transmap*(B.max()-B), transmap*(G.max()-G), transmap*(R.max()-R)])
+    cv2.imwrite('get_low_quailty/test_image/panel00.png', panel)
     panel_ratio = random.uniform(0.6, 0.8)
 
     # 加权合成
@@ -78,5 +79,5 @@ def cataract_simulation(filepath, maskpath, image_size):
     return img_A, img
 
 if __name__ == '__main__':
-    img_A, img_B = cataract_simulation('test_image/NL_001.png', 'test_image/NL_001_mask.png', 512)
-    cv2.imwrite('test_image/original_method.png', np.concatenate([img_A, img_B], 1))
+    img_A, img_B = cataract_simulation('get_low_quailty/test_image/NL_001.png', 'get_low_quailty/test_image/NL_001_mask.png', 512)
+    # cv2.imwrite('test_image/original_method.png', np.concatenate([img_A, img_B], 1))
