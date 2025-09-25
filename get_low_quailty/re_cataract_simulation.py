@@ -29,6 +29,13 @@ def gaussian(img):
     k5 = ndimage.convolve(img, kernel_5x5)
     return k5
 
+# 高斯模糊在通道层面应用
+def gaussian_blur_channel(img, sigma=[1.5, 1.2, 1.0]):
+    channels = list(cv2.split(img))
+    for i in range(len(channels)):
+        channels[i] = ndimage.gaussian_filter(channels[i], sigma[i])
+    return cv2.merge(channels)
+
 # 白内障眼底图像模拟
 def cataract_simulation(filepath, maskpath, image_size):
     # 读取 img | mask
@@ -52,23 +59,44 @@ def cataract_simulation(filepath, maskpath, image_size):
     transmap[w//2+wp, h//2+hp] = 0
     transmap = gaussian(ndimage.distance_transform_edt(transmap))*mask
     transmap = transmap / transmap.max()
-    transmap = 1 - transmap
+    tau = transmap  # 这里的话感觉还是和论文有点出入，不知道为啥这样效果好一点
+
     # L = 255.0
     # L也加上颜色衰减
-    L_c = np.array([150, 200, 220])
-    transmap = transmap[:, :, np.newaxis]
+    L_c = np.array([150, 200, 220], dtype=np.float32)
+    tau = tau[:, :, np.newaxis]
 
-    panel = transmap*(L_c-s_attention)
+    # 计算 panel
+    panel = tau*(L_c-s_attention)
+    beta = 0.6
+    panel = beta * panel    # 乘上一个衰减系数
+
+    sigma = [2.0, 1.5, 1.0]
+    panel = gaussian_blur_channel(panel, sigma=sigma)
+    panel = cv2.GaussianBlur(panel, (7, 7), 1.5)
+
+    # 添加 "黄色" 偏置，为了增加白内障引起的黄褐色
+    yellow_bias = tau*np.array([0, 60, 35])
+    panel += yellow_bias
+
+    mask = mask[:, :, np.newaxis]
+    panel *= mask
+    
     cv2.imwrite('get_low_quailty/test_image/panel.png', np.concatenate([panel, img], 1))
 
-    img_A = s_attention + panel
-
+    # 加权合成
+    img_A = 0.85*s_attention + panel
     img_A[img_A>255] = 255
-    mask = mask[:, :, np.newaxis]
+    
+    # 颜色增强
+    c = random.uniform(0.9, 1.3)
+    b = random.uniform(0.9, 1.0)
+    e = random.uniform(0.9, 1.3)
+    img_enhanced_color = Image.fromarray((img_A).astype('uint8'))
 
-    return img_A*mask, img
+    enh_con = ImageEnhance.Contrast(img_enhanced_color).enhance(c)
+    enh_bri = ImageEnhance.Brightness(enh_con).enhance(b)
+    enh_col = ImageEnhance.Color(enh_bri).enhance(e)
+    img_A= enh_col*mask
 
-if __name__ == '__main__':
-    print(os.getcwd())
-    img_A, img = cataract_simulation('get_low_quailty/test_image/NL_001.png', 'get_low_quailty/test_image/NL_001_mask.png', 512)
-    cv2.imwrite('get_low_quailty/test_image/re_method.png', np.concatenate([img_A, img], 1))
+    return img_A, img

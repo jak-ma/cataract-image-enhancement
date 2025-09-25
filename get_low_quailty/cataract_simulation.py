@@ -44,7 +44,6 @@ def cataract_simulation(filepath, maskpath, image_size):
     transmap = np.ones(shape=[h, w])
     transmap[w//2+wp, h//2+hp] = 0
     transmap = gaussian(ndimage.distance_transform_edt(transmap))*mask
-    print(transmap.shape)
     transmap = transmap / transmap.max()
 
     # 模拟乘上衰减系数的眼底图像 a*s(i, j)
@@ -77,7 +76,3 @@ def cataract_simulation(filepath, maskpath, image_size):
     img_A = enh_col*mask
 
     return img_A, img
-
-if __name__ == '__main__':
-    img_A, img_B = cataract_simulation('get_low_quailty/test_image/NL_001.png', 'get_low_quailty/test_image/NL_001_mask.png', 512)
-    # cv2.imwrite('test_image/original_method.png', np.concatenate([img_A, img_B], 1))
