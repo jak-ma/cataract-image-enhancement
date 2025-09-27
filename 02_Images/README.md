@@ -20,7 +20,7 @@ bmp在磁盘中的存储形式
 
 鼠标操作是有它对应的应用和对应的函数的，具体的需要用时查询，如 **YOLO鼠标点击打标|悬停查看信息**
 
-### 图像的灰度化
+## 图像的灰度化
 
 1. 灰度化的方法
 
@@ -66,3 +66,44 @@ def hist():
 
 ## 直方图的均衡化
 
+直方图的均衡化又称作直方图修平，就是把一已知灰度概率分布的图像，经过一种变换，使之演变成一幅具有均匀灰度概率分布的新图像。是一种非线性点运算，能够**增强图像的局部对比度**。
+
+**算法流程**
+
+1. 统计原图像素值的个数 `Nk`（像素值为k的像素的个数）
+2. 计算它们的直方图概率 `Pk = Nk / N`
+3. 计算累加直方图 `Sk = 求和(Pk)` 
+4. 数组映射后对象取整 `Sk = int{(L-1)*Sk+0.5} = int{255*Sk+0.5}`
+5. 根据映射关系对原图像素进行替换 `Rk -> Sk`
+
+`main.py: myEqualizeHist()`
+
+```py
+def myEqualizeHist():
+    img = cv2.imread('00_templates/golang.jpg', 0)
+    h ,w = img.shape
+    Nk = np.zeros(256, np.uint32)
+    Pk = np.zeros(256, np.float32)
+    for i in range(h):
+        for j in range(w):
+            Nk[img[i, j]]+=1
+    Nk = Nk.astype(np.float32)
+    Pk = Nk / (h*w)
+    Sk = np.zeros(256, np.float32)
+    for i in range(256):
+        Sk[i] = Sk[i-1] + Pk[i]
+    histf = np.zeros(256, np.uint8)
+    histf = np.round(Sk*255).astype(np.uint8)
+    
+    for i in range(h):
+        for j in range(w):
+            img[i, j] = histf[img[i, j]]
+    
+    return histf, img
+```
+
+## 图像的归一化
+
+`cv2.normalize(img, None, 0, 1, cv2.NORM_MINMAX)`
+
+## 计算程序运行的时间
