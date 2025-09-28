@@ -56,7 +56,7 @@ def get_mask_BZ(img):
     else:
         gray_img = img
     
-    # 基于启发式函数 得到阈值
+    # TODO 基于启发式函数 得到阈值
     threhold = np.mean(gray_img)/3-7
     # 二值化
     _, mask = cv2.threshold(gray_img, max(0, threhold), 1, cv2.THRESH_BINARY)
@@ -81,7 +81,7 @@ def _get_center_radius_by_hough(mask):
     circles = cv2.HoughCircles((mask*255).astype(np.uint8), cv2.HOUGH_GRADIENT, 1, 1000, param1=5, param2=5, minRadius=min(mask.shape)//4, maxRadius=max(mask.shape)//2)
     center = circles[0, 0, :2]
     radius = circles[0, 0, 2]
-
+    
     return center, radius
 
 # def _get_circle_by_center_bbox(shape, center, bbox, radius):

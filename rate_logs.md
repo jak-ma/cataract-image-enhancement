@@ -10,3 +10,12 @@ rate logs
 
 - [ ] 制作mask
 - [ ] 制作数据集类 cataract_pairs.datasets
+
+上述两个任务需要先熟悉opencv常见用法之后再次进行
+
+进行 model 的编写：
+
+- [ ] 完成基类编写 - (我的问题是对同时加载模型的操作需要一个具象化的东西来加深理解) 还剩一些计算型函数的编写和理解
+    Tomorrow, first, check your codes!
+- [ ] 完成 arcnet 编写
+
