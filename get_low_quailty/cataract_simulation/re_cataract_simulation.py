@@ -31,7 +31,7 @@ def gaussian(img):
 
 # 高斯模糊在通道层面应用
 def gaussian_blur_channel(img, sigma=[1.5, 1.2, 1.0]):
-    channels = list(cv2.split(img))
+    channels = list(cv2.split(img))     # 使用list()转化是因为cv2.split(img)返回tuple类型不可修改
     for i in range(len(channels)):
         channels[i] = ndimage.gaussian_filter(channels[i], sigma[i])
     return cv2.merge(channels)
@@ -50,7 +50,7 @@ def cataract_simulation(filepath, maskpath, image_size):
     # 在全局加上不同颜色的不同衰减系数
     alpha_c = np.array([0.4, 0.75, 0.85])
     s_attention = alpha_c * s     # 得到式子中的第一部分，视网膜反射部分光
-     
+    
     # 计算 t(i, j)
     h, w ,c = img.shape
     wp = random.randint(int(-0.3*w), int(w*0.3))
@@ -82,7 +82,8 @@ def cataract_simulation(filepath, maskpath, image_size):
     mask = mask[:, :, np.newaxis]
     panel *= mask
     
-    cv2.imwrite('get_low_quailty/test_image/panel.png', np.concatenate([panel, img], 1))
+    # 调试代码时所用
+    # cv2.imwrite('get_low_quailty/test_image/panel.png', np.concatenate([panel, img], 1))
 
     # 加权合成
     img_A = 0.85*s_attention + panel

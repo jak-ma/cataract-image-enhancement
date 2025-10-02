@@ -30,7 +30,7 @@ class Basemodel(ABC):
         self.visual_names = []
         self.optimizers = []
         self.image_paths = []
-        # 这个是一个监控指标值，当比如损失不再下降时，触发学习率下降
+        # 这个是一个监控指标值，当比如 监控损失值，当损失不再下降时，触发学习率下降
         self.metric = 0
     
     # 改变命令行参数函数
@@ -56,11 +56,19 @@ class Basemodel(ABC):
         # called by: 被xxx调用
         pass
 
+    # 参数优化
+    @abstractmethod
+    def optimize_parameters(self):
+        # 计算 loss, grads; 更新 weights.
+        pass
+
     def setup(self, opt):
-        # if self.isTrain:
-        #     self.schedulers = [networks.get_scheduler(optimizer, opt) for optimizer in self.optimizers]
-        # if not self.isTrain or opt.continue_train:
-        #     load_suffix = '%d' % opt.load_iter if opt.load_iter > 0 else opt.epoch
+        if self.isTrain:
+            self.schedulers = [networks.get_scheduler(optimizer, opt) for optimizer in self.optimizers]
+        if not self.isTrain or opt.continue_train:
+            load_suffix = f'{opt.load_iter}' if opt.load_iter > 0 else f'{opt.epoch}'
+            self.load_networks(load_suffix)
+        self.print_networks(opt.verbose)
         pass
 
     # test 时进行模型评估
@@ -71,7 +79,8 @@ class Basemodel(ABC):
                 # net = self.net'name'
                 net = getattr(self, 'net' + name)
                 net.eval()
-    
+
+    # 正常的 test 步骤
     def test(self):
         with torch.no_grad():
             self.forward()
@@ -81,13 +90,22 @@ class Basemodel(ABC):
     def compute_visuals(self):
         pass
 
-    # 使用scheduler规划学习率，退化学习
+    # 使用scheduler规划学习率，退化学习 (更新学习率的函数)
+    # 感觉这个函数的设置具有很大的特殊性，没有较好的复用价值
     def update_learning_rate(self):
-        pass
+        old_lr = self.optimizers[0].param_groups[0]['lr']
+        for scheduler in self.schedulers:
+            if self.opt.lr_policy == 'plateau':
+                scheduler.step(self.metric)
+            else:
+                scheduler.step()
+        
+        lr = self.optimizers[0].param_groups[0]['lr']
+        print(f'learning rate {old_lr:.7f} -> {lr:.7f}')
 
     # 返回当前的可视化图像
     # 训练逻辑中定义了通过 visdom 来展示
-    # 并使用一个html文件来保存
+    # 并使用一个 html 文件来保存
     def get_current_visuals(self):
         # 有序字典 OrderedDict 按照插入的顺序排列
         visual_ret = OrderedDict()
@@ -106,20 +124,31 @@ class Basemodel(ABC):
     # 保存模型
     def save_networks(self, epoch):
         for name in self.model_names:
-            save_filename = f'{epoch}_net_{name}.pth'
-            save_path = os.path.join(self.save_dir, save_filename)
-            net = getattr(self, 'net' + name)
-            # 先把模型参数移至CPU, 然后再保存
-            if len(self.gpu_ids) > 0 and torch.cuda.is_available():
-                torch.save(net.module.cpu().state_dict(), save_path)
-                # 保存完了以后继续把模型转移到 GPU 进行训练
-                net.cuda(self.gpu_ids[0])
-            else:
-                torch.save(net.module.cpu().state_dict(), save_path)
+            if isinstance(name, str):
+                save_filename = f'{epoch}_net_{name}.pth'
+                save_path = os.path.join(self.save_dir, save_filename)
+                net = getattr(self, 'net' + name)
+                # 先把模型参数移至CPU, 然后再保存
+                if len(self.gpu_ids) > 0 and torch.cuda.is_available():
+                    torch.save(net.module.cpu().state_dict(), save_path)
+                    # 保存完了以后继续把模型转移到 GPU 进行训练
+                    net.cuda(self.gpu_ids[0])
+                else:
+                    torch.save(net.module.cpu().state_dict(), save_path)
 
-    # 私有函数
+    # 私有函数 (感觉没搞明白，嵌套的挺多的)
     def __path_instance_norm_state_dict(self, state_dict, module, keys, i=0):
-        pass
+        key = keys[i]
+        if i + 1 == len(keys):  # at the end, pointing to a parameter/buffer
+            if module.__class__.__name__.startswith('InstanceNorm') and \
+                    (key == 'running_mean' or key == 'running_var'):
+                if getattr(module, key) is None:
+                    state_dict.pop('.'.join(keys))
+            if module.__class__.__name__.startswith('InstanceNorm') and \
+               (key == 'num_batches_tracked'):
+                state_dict.pop('.'.join(keys))
+        else:
+            self.__patch_instance_norm_state_dict(state_dict, getattr(module, key), keys, i + 1)
 
     # 从磁盘中加载模型
     def load_networks(self, epoch):
@@ -127,7 +156,7 @@ class Basemodel(ABC):
             load_filename = f'{epoch}_net_{name}.pth'
             load_path = os.path.join(self.save_dir, load_filename)
             net = getattr(self, 'net'+name)
-
+ 
             if isinstance(net, torch.nn.DataParallel):
                 net = net.module
             print(f'loading the model net{name} from {load_path}...')
@@ -135,8 +164,10 @@ class Basemodel(ABC):
             # TODO state_dict._metadata 包含了一些模型相关的辅助信息，在 state_dict() 时自动添加进去
             if hasattr(state_dict, '_metadata'):
                 del state_dict._metadata
-            
-            pass
+            for key in list(state_dict.keys()):  
+                    self.__patch_instance_norm_state_dict(state_dict, net, key.split('.'))
+            net.load_state_dict(state_dict)
+
     
     # 输出网络的总参数 | 模型结构
     def print_networks(self, verbose):
@@ -144,20 +175,20 @@ class Basemodel(ABC):
         print('--------------- Networks initialized ----------------')
         for name in self.model_names:
             if isinstance(name, str):
-                net = getattr(self, 'net'+name)
+                net = getattr(self, 'net' + name)
                 num_params = 0
                 for param in net.parameters():
                     # param.numel() -> numel() 能够计算每个张量元素的个数
                     num_params += param.numel()
                 if verbose:
                     print(net)
-                print(f'[NetWorks {name}] Total number of parameters: {num_params/1e6:.3f}M')
+                print(f'[NetWorks {name}] Total number of parameters: {num_params/1e6:.3f} M')
         print('----------------------------------------------------')
 
     # 设置模型是否需要 计算梯度
     def set_requires_grad(self, nets, requires_grad=False):
         if not isinstance(nets, list):
-            # 小tip，标准化设计
+            # 小tips，标准化设计
             nets = [nets]
         for net in nets:
             if net is not None:
