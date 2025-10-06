@@ -95,12 +95,13 @@ def __flip(img, flip):
     if flip:
         return img.transpose(Image.FLIP_LEFT_RIGHT)
     return img
-
+ 
 def __flip_vertical(img, flip):
     if flip:
         return img.transpose(Image.FLIP_TOP_BOTTOM)
     return img
 
+### TODO 这个函数的命名和他的功能实在是有点不规范
 def get_transform_six_channel(opt, params=None, grayscale=False, method=Image.BICUBIC, convert=True):
     transform_list = []
     mask_transform_list = []
@@ -148,7 +149,8 @@ def get_transform_six_channel(opt, params=None, grayscale=False, method=Image.BI
             transform_list.append(transforms.Lambda(lambda img: __flip_vertical(img, params['flip_vertical'])))
             mask_transform_list.append(transforms.Lambda(lambda img: __flip_vertical(img, params['flip_vertical'])))
     
-    if convert:
+    # 这里为啥需要对原图做一次 bn 呢
+    if convert: 
         transform_list += [transforms.ToTensor()]
         mask_transform_list += [transforms.ToTensor()]
         if grayscale:
