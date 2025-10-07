@@ -20,7 +20,7 @@ class BaseDataset(data.Dataset, ABC):
 
     @abstractmethod
     def __len__(self):
-        pass
+        return 0
 
 def get_params(opt, size):
     w, h = size
@@ -44,6 +44,7 @@ def get_params(opt, size):
         new_w = opt.load_size
         new_h = opt.load_size*h // w
     
+    # 这里感觉是一个可以改进的点
     x = random.randint(0, np.maximum(0, new_w - opt.crop_size))
     y = random.randint(0, np.maximum(0, new_h - opt.crop_size))
 
@@ -110,7 +111,7 @@ def get_transform_six_channel(opt, params=None, grayscale=False, method=Image.BI
             osize = [opt.load_size, opt.load_size]
         else:
             load_size = params['load_size']
-            osize = [opt.load_size, opt.load_size]
+            osize = [load_size, load_size]
         transform_list.append(transforms.Resize(osize, method))
         mask_transform_list.append(transforms.Resize(osize, Image.NEAREST))
     elif 'scale_width' in opt.preprocess:
@@ -144,7 +145,7 @@ def get_transform_six_channel(opt, params=None, grayscale=False, method=Image.BI
         if params is None:
             transform_list.append(transforms.RandomVerticalFlip())
             mask_transform_list.append(transforms.RandomVerticalFlip())
-        elif params['flip']:
+        elif params['flip']:    # TODO 这个参数感觉有点疑问的？
             transform_list.append(transforms.Lambda(lambda img: __flip_vertical(img, params['flip_vertical'])))
             mask_transform_list.append(transforms.Lambda(lambda img: __flip_vertical(img, params['flip_vertical'])))
     
