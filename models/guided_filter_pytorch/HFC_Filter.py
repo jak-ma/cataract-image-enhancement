@@ -60,21 +60,3 @@ class HFCFilter(nn.Module):
             res = (res + 1)*mask - 1
 
         return res
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    def forward(self, x, mask):
