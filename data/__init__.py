@@ -18,7 +18,7 @@ def find_dataset_using_name(dataset_name):
     
     return dataset
 
-def get_options_setter(dataset_name):
+def get_option_setter(dataset_name):
     dataset = find_dataset_using_name(dataset_name)
     return dataset.modify_commandline_options
 
@@ -49,6 +49,6 @@ class CustomDatasetDataLoader():
                 break
             yield data
 
-def create_data(opt):
+def create_dataset(opt):
     data_loader = CustomDatasetDataLoader(opt)
     return data_loader.load_data()

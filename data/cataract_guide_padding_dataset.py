@@ -4,12 +4,12 @@ from utils.image_folder import make_dataset
 from PIL import Image
 import random
 
-# =====数据集路径配置===== #
-source_dir = ""
-target_dir = ""
-source_mask_dir = ""
-target_mask_dir = ""
-# ======================= #
+# ========数据集路径配置======== #
+source_dir = "source_AB"        #
+target_dir = "target"           #
+source_mask_dir = "source_mask" #
+target_mask_dir = "target_mask" #
+# ============================= #
 
 
 class CataractGuidePaddingDataset(BaseDataset):
@@ -38,7 +38,7 @@ class CataractGuidePaddingDataset(BaseDataset):
 
 
         self.target_size = len(self.target_paths)
-        assert(self.opt.load_szie>=self.opt.crop_szie), 'crop_szie should be smaller than load_size'
+        assert(self.opt.load_size>=self.opt.crop_size), 'crop_szie should be smaller than load_size'
 
         self.input_nc = self.opt.output_nc if self.opt.direction == 'BtoA' else self.opt.input_nc 
         self.output_nc = self.opt.input_nc if self.opt.direction == 'BtoA' else self.opt.output_nc

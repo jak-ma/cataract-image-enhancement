@@ -18,10 +18,9 @@ class Gaussian_kernel(nn.Module):
         self.padding = torch.nn.ReplicationPad2d(int(self.kernel_len/2))
 
     def forward(self, x):
-        x = self.padding(x)
         res = []
         for i in range(x.shape[1]):
-            res.append(F.conv2d(x[:, i:i+1], self.weight))
+            res.append(F.conv2d(x[:, i:i+1], self.weight, padding='same'))
         x_output = torch.cat(res, dim=1)
 
         return x_output
@@ -50,6 +49,7 @@ class HFCFilter(nn.Module):
         return padding + mask_x
     
     def forward(self, x, mask):
+        # TODO 源码填充方式存在维度不匹配的问题
         assert mask is not None, 'In HFCFilter/forward(), called mask is None'
         x = self.median_padding(x, mask)
         gaussian_output = self.gaussian_filter(x)

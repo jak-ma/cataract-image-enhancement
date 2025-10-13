@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import torch.utils.data as data 
-from random import random
+import random
 from PIL import Image
 import numpy as np
 import torchvision.transforms as transforms
@@ -86,10 +86,10 @@ def __scale_width(img, target_size, crop_size, method=Image.BICUBIC):
 def __crop(img, pos, size):
     ow, oh = img.size
     x1, y1 = pos
-    tw, th = size
+    tw = th = size
 
     if (ow > tw or oh > th):
-        return img.crop(x1, y1, x1+tw, y1+th)
+        return img.crop((x1, y1, x1+tw, y1+th))
     return img
 
 def __flip(img, flip):

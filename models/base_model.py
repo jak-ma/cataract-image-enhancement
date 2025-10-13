@@ -4,8 +4,7 @@ from abc import ABC, abstractmethod
 from . import networks
 from collections import OrderedDict
 
-
-class Basemodel(ABC):
+class BaseModel(ABC):
     ### 继承 父类 ABC 表明这个类是个抽象基类
     ### 使用 @abstractmethod 修饰器修饰的函数必须在子类中被实现
     # 初始化方法
@@ -15,7 +14,7 @@ class Basemodel(ABC):
         self.opt = opt
         self.gpu_ids = opt.gpu_ids
         self.isTrain = opt.isTrain
-        self.device = torch.device('cuda: {}'.format(self.gpu_ids[0])) if self.gpu_ids else torch.device('cpu')
+        self.device = torch.device(f'cuda:{self.gpu_ids[0]}') if self.gpu_ids else torch.device('cpu')
         # 指定结果保存目录
         self.save_dir = os.path.join(opt.checkpoints_dir, opt.name)
         # 预处理图像方式：'scale_width' 会将输入的的图像变得尺寸不一致

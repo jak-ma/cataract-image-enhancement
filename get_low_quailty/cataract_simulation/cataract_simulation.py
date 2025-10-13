@@ -30,12 +30,9 @@ def gaussian(img):
     return k5
 
 # 白内障眼底图像模拟
-def cataract_simulation(filepath, maskpath, image_size):
-    # 读取 img | mask
-    img = cv2.imread(filepath, 1)
-    img = cv2.resize(img, (image_size, image_size))
-    mask, _, _ = cv2.split(cv2.imread(maskpath, 1))
-    mask = mask / mask.max()
+def cataract_simulation(img, mask):
+
+    # mask = mask / mask.max()
     
     # 模拟白内障相关的空间变化透射函数 t(i, j) | TODO 这里和论文有点出入
     h, w, c = img.shape
